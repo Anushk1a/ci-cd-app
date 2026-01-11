@@ -28,6 +28,5 @@ This is a simple application built to practice and demonstrate a complete CI/CD 
 
 ## 📂 Project Structure
 
-Webhook test - <current date/time>
 Trigger test for Jenkins webhook
 
