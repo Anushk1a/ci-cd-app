@@ -30,4 +30,6 @@ This is a simple application built to practice and demonstrate a complete CI/CD 
 
 Trigger test for Jenkins webhook
 trigger test 1
+trigger test 2
+
 
