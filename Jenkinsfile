@@ -2,60 +2,56 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = 'dockerhub-creds'   // Jenkins credentials ID
-        DOCKER_IMAGE = "lenoshka/ci-cd-app"       // Your DockerHub repo
+        DOCKERHUB_CREDENTIALS = 'dockerhub-creds' // Jenkins credential ID
+        DOCKER_IMAGE = 'lenoshka/ci-cd-app'       // Your DockerHub repo
+    }
+
+    triggers {
+        githubPush() // Trigger pipeline on GitHub push
     }
 
     stages {
-
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                checkout scm
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                sh 'pip install -r requirements.txt'
+                echo 'Checking out code from GitHub...'
+                git branch: 'master', url: 'https://github.com/Anushk1a/ci-cd-app.git', credentialsId: 'github-creds'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE:$BUILD_NUMBER .'
-            }
-        }
-
-        stage('Login to DockerHub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: "$DOCKERHUB_CREDENTIALS", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                echo 'Building Docker image...'
+                script {
+                    docker.build("${DOCKER_IMAGE}:latest")
                 }
             }
         }
 
-        stage('Push Image to DockerHub') {
+        stage('Push Docker Image') {
             steps {
-                sh 'docker push $DOCKER_IMAGE:$BUILD_NUMBER'
+                echo 'Pushing Docker image to DockerHub...'
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKERHUB_CREDENTIALS}") {
+                        docker.image("${DOCKER_IMAGE}:latest").push()
+                    }
+                }
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Deploy') {
             steps {
-                sh '''
-                kubectl apply -f K8s/deployment.yaml
-                kubectl apply -f K8s/service.yaml
-                '''
+                echo 'Deploying application...'
+                // Optional: Add your deploy commands here
             }
         }
     }
 
     post {
         success {
-            echo "Deployment Successful! 🎉"
+            echo 'Pipeline completed successfully! ✅'
         }
         failure {
-            echo "Pipeline Failed ❌"
+            echo 'Pipeline failed. ❌ Check logs!'
         }
     }
 }
